@@ -52,10 +52,10 @@ def process_pdf(file_name):
         data = post('images/%s.png' % file_name,'General_OCR')
         list = data['res']
         for e in list:
-             
-             if e['name'] == '2':
-                result_line = str(e['text'])
-                print (result_line)
+            result_line = str(e['text'])
+            if result_line.find('单号') > 0:
+                print('found target:\n')
+                print (result_line+'\n')
                 a = result_line.index('单号')
                 b = result_line.index('计量')
                 
@@ -73,8 +73,7 @@ def process_pdf(file_name):
     
 if __name__=='__main__':
     for file in os.listdir('images'):
-        print(file)
-        process_pdf(file)
-
-    # p = 'test/2022033100160.png'
-    # data = post(p,'General_OCR')
+        if str(file).find('pdf') > 0:
+            process_pdf(file)
+        else:
+             print('ignore file: ' + file)
