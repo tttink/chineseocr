@@ -106,10 +106,10 @@ from main import TextOcrModel
 model =  TextOcrModel(ocr,text_detect,angle_detect)
     
 
-billList = ['通用OCR','火车票','身份证']
+billList = ['General_OCR','Train','IDCard']
 
 class OCR:
-    """通用OCR识别"""
+    """General_OCR_Process"""
 
     def GET(self):
         post = {}
@@ -172,7 +172,7 @@ class OCR:
         
         
         
-                    if billModel=='' or billModel=='通用OCR' :
+                    if billModel=='' or billModel=='General_OCR' :
                         result = union_rbox(result,0.2)
                         res = [{'text':x['text'],
                                 'name':str(i),
@@ -186,12 +186,12 @@ class OCR:
                                } for i,x in enumerate(result)]
                         res = adjust_box_to_origin(img,angle, res)##修正box
         
-                    elif billModel=='火车票':
+                    elif billModel=='Train':
                         res = trainTicket.trainTicket(result)
                         res = res.res
                         res =[ {'text':res[key],'name':key,'box':{}} for key in res]
         
-                    elif billModel=='身份证':
+                    elif billModel=='IDCard':
         
                         res = idcard.idcard(result)
                         res = res.res
