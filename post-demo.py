@@ -45,10 +45,10 @@ def process_pdf(file_name):
         # 每个尺寸的缩放系数为2，这将为我们生成分辨率提高四倍的图像。
         zoom_x = 2.0
         zoom_y = 2.0
-        trans = fitz.Matrix(zoom_x, zoom_y).preRotate(rotate)
+        trans = fitz.Matrix(zoom_x, zoom_y).prerotate(rotate)
 
-        pm = page.getPixmap(matrix=trans, alpha=False)
-        pm.writePNG('images/%s.png' % file_name)
+        pm = page.get_pixmap(matrix=trans, alpha=False)
+        pm.save('images/%s.png' % file_name)
         data = post('images/%s.png' % file_name,'General_OCR')
         list = data['res']
         for e in list:
