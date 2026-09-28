@@ -1,3 +1,5 @@
+简体中文 | [English](README.en.md)
+
 ## !!!Forked from https://github.com/chineseocr/chineseocr
 ## 感谢原作者
 ---
