@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>p5 Flow Field</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #f3efe6; overflow: hidden; }
+    main { position: fixed; inset: 0; }
+    canvas { display: block; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/p5@2.3.4/lib/p5.min.js"></script>
+</head>
+<body>
+  <main></main>
+  <script>
+    // Flow-field ink: press R for a new seed, S to save a PNG.
+    const PARAMS = {
+      particlesPer10kPx: 6,   // density scales with canvas area
+      noiseScale: 0.0022,
+      turns: 2.2,             // how many full rotations the field can make
+      stepLength: 1.4,
+      maxFrames: 600,
+    };
+    const PALETTE = ['#1d3557', '#e63946', '#2a9d8f', '#f4a261']; // index 1 is the sparing accent
+    const BG = '#f3efe6';
+
+    let seed, particles = [], frame = 0;
+
+    function setup() {
+      createCanvas(windowWidth, windowHeight);
+      pixelDensity(Math.min(2, displayDensity()));
+      seed = floor(random(1e9));
+      regenerate();
+      describe('Thin translucent ink strokes drifting along a smooth noise flow field on warm paper.');
+    }
+
+    function regenerate() {
+      randomSeed(seed);
+      noiseSeed(seed);
+      background(BG);
+      frame = 0;
+      const n = floor((width * height) / 10000 * PARAMS.particlesPer10kPx);
+      const margin = min(width, height) * 0.08;
+      particles = Array.from({ length: n }, () => ({
+        x: random(margin, width - margin),
+        y: random(margin, height - margin),
+        c: color(random() < 0.12 ? PALETTE[1] : random([PALETTE[0], PALETTE[2], PALETTE[3]])),
+        life: random(200, PARAMS.maxFrames),
+      }));
+      for (const p of particles) p.c.setAlpha(28);
+      loop();
+    }
+
+    function draw() {
+      strokeWeight(1);
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        const a = noise(p.x * PARAMS.noiseScale, p.y * PARAMS.noiseScale) * TAU * PARAMS.turns;
+        const nx = p.x + cos(a) * PARAMS.stepLength;
+        const ny = p.y + sin(a) * PARAMS.stepLength;
+        stroke(p.c);
+        line(p.x, p.y, nx, ny);
+        p.x = nx; p.y = ny;
+        if (--p.life <= 0 || nx < 0 || ny < 0 || nx > width || ny > height) {
+          particles[i] = particles[particles.length - 1]; // swap-and-pop
+          particles.pop();
+        }
+      }
+      if (++frame >= PARAMS.maxFrames || particles.length === 0) {
+        addGrain();
+        noLoop();
+      }
+    }
+
+    function addGrain() {
+      noStroke();
+      fill(0, 10);
+      for (let i = 0; i < (width * height) / 40; i++) rect(random(width), random(height), 1, 1);
+    }
+
+    function windowResized() { resizeCanvas(windowWidth, windowHeight); regenerate(); }
+
+    function keyPressed() {
+      if (key === 's') save(`flow-${seed}.png`);
+      if (key === 'r') { seed = floor(random(1e9)); regenerate(); }
+    }
+  </script>
+</body>
+</html>

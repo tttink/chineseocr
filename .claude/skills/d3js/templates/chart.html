@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>D3 Bar Chart</title>
+  <style>
+    :root {
+      --bg: #ffffff; --fg: #1f2328; --muted: #6e7781; --grid: rgba(31, 35, 40, 0.08);
+      --bar: #3b6fd8; --bar-hover: #1f4fb5; --tip-bg: #1f2328; --tip-fg: #ffffff;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1216; --fg: #e6edf3; --muted: #8b949e; --grid: rgba(230, 237, 243, 0.08);
+        --bar: #6f9cf5; --bar-hover: #a3c1ff; --tip-bg: #e6edf3; --tip-fg: #0f1216;
+      }
+    }
+    body { margin: 0; padding: 24px 16px; background: var(--bg); color: var(--fg);
+           font: 14px/1.4 system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+    .wrap { max-width: 760px; margin: 0 auto; }
+    h1 { font-size: 18px; margin: 0 0 4px; }
+    p.sub { margin: 0 0 16px; color: var(--muted); }
+    button { font: inherit; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--grid);
+             background: transparent; color: var(--fg); cursor: pointer; }
+    #chart svg { display: block; width: 100%; height: auto; font-variant-numeric: tabular-nums; }
+    #chart .tick text { fill: var(--muted); font-size: 12px; }
+    #chart .tick line { stroke: var(--grid); }
+    #chart rect { fill: var(--bar); transition: fill 120ms; }
+    #chart rect:hover { fill: var(--bar-hover); }
+    .tooltip { position: absolute; pointer-events: none; padding: 6px 8px; border-radius: 6px;
+               background: var(--tip-bg); color: var(--tip-fg); font-size: 12px; opacity: 0; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Monthly active users</h1>
+    <p class="sub">Thousands · sample data · <button id="shuffle" type="button">Randomize</button></p>
+    <div id="chart"></div>
+  </div>
+  <div class="tooltip" role="status"></div>
+  <script>
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const makeData = () => months.map((m, i) => ({ id: m, label: m, value: Math.round(40 + i * 6 + Math.random() * 40) }));
+
+    const width = 760, height = 380;
+    const margin = { top: 16, right: 16, bottom: 32, left: 44 };
+    const duration = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 600;
+
+    const svg = d3.select("#chart").append("svg")
+      .attr("viewBox", [0, 0, width, height])
+      .attr("role", "img")
+      .attr("aria-label", "Bar chart of monthly active users in thousands, January to December");
+
+    const x = d3.scaleBand().range([margin.left, width - margin.right]).padding(0.25);
+    const y = d3.scaleLinear().range([height - margin.bottom, margin.top]);
+
+    // Static scaffolding, built once
+    const xAxisG = svg.append("g").attr("transform", `translate(0,${height - margin.bottom})`);
+    const yAxisG = svg.append("g").attr("transform", `translate(${margin.left},0)`);
+    const barsG = svg.append("g");
+    const tip = d3.select(".tooltip");
+    const fmt = d3.format(",d");
+
+    function update(data) {
+      x.domain(data.map(d => d.id));
+      y.domain([0, d3.max(data, d => d.value)]).nice();
+      const t = svg.transition().duration(duration).ease(d3.easeCubicOut);
+
+      xAxisG.transition(t).call(d3.axisBottom(x).tickSizeOuter(0))
+        .call(g => g.select(".domain").remove());
+      yAxisG.transition(t).call(d3.axisLeft(y).ticks(5).tickSize(-(width - margin.left - margin.right)))
+        .call(g => g.select(".domain").remove());
+
+      barsG.selectAll("rect")
+        .data(data, d => d.id)
+        .join(
+          enter => enter.append("rect")
+            .attr("x", d => x(d.id)).attr("width", x.bandwidth())
+            .attr("y", y(0)).attr("height", 0).attr("rx", 3),
+          update => update,
+          exit => exit.transition(t).attr("y", y(0)).attr("height", 0).remove()
+        )
+        .on("pointermove", (event, d) => {
+          tip.style("opacity", 1)
+             .style("left", `${event.pageX + 12}px`)
+             .style("top", `${event.pageY - 28}px`)
+             .text(`${d.label}: ${fmt(d.value)}k`);
+        })
+        .on("pointerleave", () => tip.style("opacity", 0))
+        .transition(t)
+          .attr("x", d => x(d.id)).attr("width", x.bandwidth())
+          .attr("y", d => y(d.value)).attr("height", d => y(0) - y(d.value));
+    }
+
+    update(makeData());
+    d3.select("#shuffle").on("click", () => update(makeData()));
+  </script>
+</body>
+</html>
